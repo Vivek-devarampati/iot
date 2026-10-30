@@ -1,0 +1,25 @@
+import paho.mqtt.client as mqtt
+import requests, datetime, csv, os
+
+BOT_TOKEN = "YOUR_BOT_TOKEN"
+CHAT_ID = "YOUR_CHAT_ID"
+
+def send_alert(msg):
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    requests.post(url, data={"chat_id": CHAT_ID, "text": msg})
+
+def on_message(c, u, msg):
+    event = msg.payload.decode()
+    if event == "MOTION_DETECTED":
+        alert = f"🚨 Motion Detected! Time: {datetime.datetime.now()}"
+        print(alert)
+        send_alert(alert)
+        with open("security_logs.csv","a",newline="") as f:
+            csv.writer(f).writerow([datetime.datetime.now(), event])
+
+client = mqtt.Client()
+client.on_message = on_message
+client.connect("broker.hivemq.com", 1883, 60)
+client.subscribe("home/security")
+print("Listening...")
+client.loop_forever()
